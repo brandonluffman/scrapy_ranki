@@ -218,7 +218,19 @@ class BlackwidowSpider(scrapy.Spider):
         product_descs = descriptions.css('td.hCi1Vc::text').getall()
         product_all_reviews_link = 'https://google.com' + descriptions.css('a.Ba4zEd').attrib['href']
         product_purchase_stores = descriptions.css('a.b5ycib::text').getall()
-        product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+        # product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+
+        ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
+        ### FOR CLARIFICATION, THE TRY STATEMENT GRABS THE LINK TO FIND ALL PRICES FROM ALL SITES ("COMPARE PRICES FROM 5+ STORES"), THE EXCEPT STATEMENT IS CALLED IF THE PRODUCT PAGE DOESN'T HAVE A COMPARE OPTIONS LINK AND JUST GRABS THE PRODUCT BUYING LINKS (AMAZON.COM, EBAY.COM, ETC)
+        try:
+            product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+        except:
+            product_buying_options = []
+            diver = descriptions.css('div.UAVKwf')
+            for div in diver:
+                test = div.css('a').attrib['href']
+                product_buying_options.append(test)
+            print(product_buying_options)
 
         self.review_links.append(product_all_reviews_link)
         self.buying_option_links.append(product_buying_options)
@@ -243,6 +255,8 @@ class BlackwidowSpider(scrapy.Spider):
 
         for review_link in self.review_links:
             yield scrapy.Request(f'{review_link}', callback=self.parse_reviews)
+        
+
         
         for buying_link in self.buying_option_links:
             yield scrapy.Request(f'{buying_link}', callback=self.parse_buying_options)
@@ -281,6 +295,3 @@ class BlackwidowSpider(scrapy.Spider):
             #     next_page_url = 'https://www.google.com' + next_page
             #     yield response.follow(next_page_url, callback=self.parse_reviews)
 
-
-
-        
