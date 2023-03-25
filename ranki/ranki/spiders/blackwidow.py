@@ -16,8 +16,15 @@ class BlackwidowSpider(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
-        self.results = {"entities": ['']}
+        self.query = ''
         self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
+        self.results = {
+            'entities': self.entities,
+            'card_links': [],
+            'card_descriptions': [],
+            'buying_options': [],
+            'reviews': []
+        }
         self.card_results = []
         self.review_links = []
         self.buying_option_links = []
@@ -37,6 +44,8 @@ class BlackwidowSpider(scrapy.Spider):
             query = 'best ' + query
         else:
             pass
+        #query added to class
+        self.query = query        
         remove = re.sub('(\A|[^0-9])([0-9]{4,6})([^0-9]|$)', '', query)
         google_query = query
         reddit_query = (remove + ' reddit')
@@ -47,6 +56,7 @@ class BlackwidowSpider(scrapy.Spider):
             yield Request(url=url,callback=self.parse)
         for card_url in card_urls:
             yield scrapy.Request(url=card_url,callback=self.parse_cards)
+        
 
 
     def parse(self, response):
@@ -57,7 +67,7 @@ class BlackwidowSpider(scrapy.Spider):
         #     string = ''
         #     for i in text:
         #         string = string + i + ' ' 
-        #     return string
+        #     self.entities.append(string)
             # nlp = spacy.load('./output/model-best')
             # doc = nlp(text)
             # items = [x.text for x in doc.ents]
@@ -79,9 +89,6 @@ class BlackwidowSpider(scrapy.Spider):
                 serp_link_list.append(serp_link)
 
         # print(serp_link_list[0]) 
-
-        metric_output = []
-            
     
         if 'https://www.reddit.com' in serp_link_list[0]:
             # print('REDDIT LINK')
@@ -110,11 +117,8 @@ class BlackwidowSpider(scrapy.Spider):
                 # for comment in post_comments:
                 #     get_product_names(response=response, self=self, text=comment)
                 url_to_comments[url] = post_comments
-            metric_output.append(url_to_comments)
             self.results['reddit'] = url_to_comments
-            yield{
-                'reddit': metric_output
-            }
+           
 
         elif 'https://www.youtube.com' in serp_link_list[0]:
             # print('YOUTUBE LINK')
@@ -139,9 +143,6 @@ class BlackwidowSpider(scrapy.Spider):
             for k,v in video_transcripts.items():
                 video_to_transcript[k] = v
             self.results['youtube'] = video_to_transcript
-            yield{
-                'youtube': video_to_transcript
-            }
 
         else:
             print('GOOGLE LINK')
@@ -161,9 +162,6 @@ class BlackwidowSpider(scrapy.Spider):
                 except:
                     pass
             self.results['google'] = affiliate_to_text
-            yield{
-                'google': affiliate_to_text
-            }
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
@@ -202,18 +200,15 @@ class BlackwidowSpider(scrapy.Spider):
                     self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
 
         links = self.card_results
+        
         for link in links:
+            self.results['card_links'].append(link)
             yield scrapy.Request(f'{link}', callback=self.parse_descriptions)
 
-        if len(self.card_results) == len(self.start_urls):
-            yield {
-                'card_links': self.card_results
-            }
 
 
     def parse_descriptions(self, response):
         descriptions = response.css('div.sg-product__dpdp-c')
-
         product_title = descriptions.css('span.BvQan::text').get()
         product_description = descriptions.css('span.sh-ds__full-txt::text').get()
         product_rating = descriptions.css('div.uYNZm::text').get()
@@ -225,7 +220,6 @@ class BlackwidowSpider(scrapy.Spider):
         product_purchase_stores = descriptions.css('a.b5ycib::text').getall()
         product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
 
-
         self.review_links.append(product_all_reviews_link)
         self.buying_option_links.append(product_buying_options)
 
@@ -233,8 +227,8 @@ class BlackwidowSpider(scrapy.Spider):
             product_review_count = product_review_count.replace(',', '')
         else:
             pass
-            #here we put the data returned into the format we want to output for our csv or json file
-        yield{
+
+        self.results['card_descriptions'].append({ response.url : {
                 'product_title' : product_title,
                 'product_description' : product_description,
                 'product_rating' : float(product_rating),
@@ -245,13 +239,10 @@ class BlackwidowSpider(scrapy.Spider):
                 'all_reviews_link': product_all_reviews_link,
                 'product_purchase_stores' : product_purchase_stores,
                 'product_buying_options' : product_buying_options,
-        }
-        # print(yielder)
-
+        }})   
 
         for review_link in self.review_links:
             yield scrapy.Request(f'{review_link}', callback=self.parse_reviews)
-        
         
         for buying_link in self.buying_option_links:
             yield scrapy.Request(f'{buying_link}', callback=self.parse_buying_options)
@@ -261,25 +252,26 @@ class BlackwidowSpider(scrapy.Spider):
         for td in tds:
             links = td.css('a').attrib['href']
             if links:
-                print(links)
-
+                self.results['buying_options'].append(links)
 
     def parse_reviews(self, response):
         reviews = response.css('div.z6XoBf')
-        
         for review in reviews:
             title = review.css('.P3O8Ne::text').get()
             date = review.css('.ff3bE::text').get()
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            #here we put the data returned into the format we want to output for our csv or json file
-            yield{
+            self.results['reviews'].append({
                 'title' : title,
                 'rating' : rating,
                 'date' : date,
                 'content' : content,
                 'source' : source,
+            })
+        if len(self.results['reviews']) == len(reviews):
+            yield{
+                self.query: self.results
             }
 
             # next_page = response.css('.sh-fp__pagination-button::attr(data-url)').get()
