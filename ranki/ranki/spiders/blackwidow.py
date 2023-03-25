@@ -269,7 +269,7 @@ class BlackwidowSpider(scrapy.Spider):
                 'content' : content,
                 'source' : source,
             }})
-        if len(self.results['reviews']) == len(self.reviews_links):
+        if len(self.results['reviews']) == len(self.review_links):
             yield{
                 self.query: self.results
             }
