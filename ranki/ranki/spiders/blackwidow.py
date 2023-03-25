@@ -262,14 +262,14 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['reviews'].append({
+            self.results['reviews'].append({response.url : {
                 'title' : title,
                 'rating' : rating,
                 'date' : date,
                 'content' : content,
                 'source' : source,
-            })
-        if len(self.results['reviews']) == len(reviews):
+            }})
+        if len(self.results['reviews']) == len(self.reviews):
             yield{
                 self.query: self.results
             }
