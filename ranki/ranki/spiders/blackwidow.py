@@ -17,7 +17,7 @@ class BlackwidowSpider(scrapy.Spider):
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
         self.query = ''
-        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
+        self.entities = ['jabra elite 75t', 'bose quietcomfort', 'apple airpods max']
         self.results = {
             'entities': self.entities,
             'card_links': [],
@@ -79,12 +79,12 @@ class BlackwidowSpider(scrapy.Spider):
         serp_results = serps.css('div.yuRUbf')
         serp_link_list = []
         if serp_results:
-            for serp_result in serp_results:
+            for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
                 serp_link_list.append(serp_link)
         else:
             serp_results = serps.css('div.DhN8Cf')
-            for serp_result in serp_results:
+            for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
                 serp_link_list.append(serp_link)
 
@@ -177,7 +177,7 @@ class BlackwidowSpider(scrapy.Spider):
             num_stores = int(card.css('a.iXEZD span::text').get().replace('+',''))
             stores_count_per_card.append(num_stores)
         print(stores_count_per_card)
-        max_num_of_stores = max(stores_count_per_card)
+        max_num_of_stores = max(stores_count_per_card, default=0)
         cards_with_max_num_stores = []
         for card in cards_with_stores:
             num_stores = int(card.css('a.iXEZD span::text').get().replace('+',''))
@@ -218,19 +218,7 @@ class BlackwidowSpider(scrapy.Spider):
         product_descs = descriptions.css('td.hCi1Vc::text').getall()
         product_all_reviews_link = 'https://google.com' + descriptions.css('a.Ba4zEd').attrib['href']
         product_purchase_stores = descriptions.css('a.b5ycib::text').getall()
-        # product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
-
-        ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
-        ### FOR CLARIFICATION, THE TRY STATEMENT GRABS THE LINK TO FIND ALL PRICES FROM ALL SITES ("COMPARE PRICES FROM 5+ STORES"), THE EXCEPT STATEMENT IS CALLED IF THE PRODUCT PAGE DOESN'T HAVE A COMPARE OPTIONS LINK AND JUST GRABS THE PRODUCT BUYING LINKS (AMAZON.COM, EBAY.COM, ETC)
-        try:
-            product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
-        except:
-            product_buying_options = []
-            diver = descriptions.css('div.UAVKwf')
-            for div in diver:
-                test = div.css('a').attrib['href']
-                product_buying_options.append(test)
-            print(product_buying_options)
+        product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
 
         self.review_links.append(product_all_reviews_link)
         self.buying_option_links.append(product_buying_options)
@@ -253,13 +241,24 @@ class BlackwidowSpider(scrapy.Spider):
                 'product_buying_options' : product_buying_options,
         }})   
 
+        ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
+        ### FOR CLARIFICATION, THE TRY STATEMENT GRABS THE LINK TO FIND ALL PRICES FROM ALL SITES ("COMPARE PRICES FROM 5+ STORES"), THE EXCEPT STATEMENT IS CALLED IF THE PRODUCT PAGE DOESN'T HAVE A COMPARE OPTIONS LINK AND JUST GRABS THE PRODUCT BUYING LINKS (AMAZON.COM, EBAY.COM, ETC)
+        
+        # product_buying_options = []
+        # product_buying_option = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+        # if product_buying_option is None:
+        #     diver = descriptions.css('div.UAVKwf')
+        #     for div in diver:
+        #         test = div.css('a').attrib['href']
+        #         product_buying_options.append(test)
+        # else:
+        #     product_buying_options.append(product_buying_option)
+        
         for review_link in self.review_links:
             yield scrapy.Request(f'{review_link}', callback=self.parse_reviews)
-        
 
-        
-        for buying_link in self.buying_option_links:
-            yield scrapy.Request(f'{buying_link}', callback=self.parse_buying_options)
+        for buying_option in self.buying_option_links:
+            yield scrapy.Request(f'{buying_option}', callback=self.parse_buying_options)
 
     def parse_buying_options(self, response):
         tds = response.css('div.UAVKwf')
