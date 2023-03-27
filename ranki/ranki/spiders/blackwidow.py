@@ -12,16 +12,23 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
+from ranki.pipelines import BlackWidowPipeline
+from ranki.items import RankiQuery
+import json
 
 
 class BlackwidowSpider(scrapy.Spider):
     name = "blackwidow"
 
+    # custom_settings = {
+    #     'ITEM_PIPELINES': {BlackWidowPipeline: 300}
+    # }
+
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
-        self.query = ''
         self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
         self.results = {
+            'query_name': '',
             'entities': self.entities,
             'card_links': [],
             'card_descriptions': [],
@@ -47,8 +54,7 @@ class BlackwidowSpider(scrapy.Spider):
             query = 'best ' + query
         else:
             pass
-        #query added to class
-        self.query = query        
+        self.results['query_name'] = self.results['query_name'] + query      
         remove = re.sub('(\A|[^0-9])([0-9]{4,6})([^0-9]|$)', '', query)
         google_query = query
         reddit_query = (remove + ' reddit')
@@ -315,9 +321,14 @@ class BlackwidowSpider(scrapy.Spider):
             # print(len(self.review_links))
         if len(self.results['reviews']) == (len(self.review_links) * 10):
             # self.results['card_links'] = list(set(self.results['card_links']))
-            yield{
-                self.query: self.results
-            }
+            query_item = RankiQuery()
+            item_fields = list(self.results.keys())
+            for field in item_fields:
+                if type(self.results[field] == list):
+                    query_item[field] = json.dumps(self.results[field])
+                else:
+                    query_item[field] = self.results[field]
+            yield query_item
 
             # next_page = response.css('.sh-fp__pagination-button::attr(data-url)').get()
 

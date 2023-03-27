@@ -6,7 +6,13 @@
 import scrapy
 
 
-class RankiItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class RankiQuery(scrapy.Item):
+    query_name = scrapy.Field()
+    entities = scrapy.Field()
+    card_links = scrapy.Field()
+    card_descriptions = scrapy.Field()
+    buying_options = scrapy.Field()
+    reviews = scrapy.Field()
+    reddit = scrapy.Field()
+    youtube = scrapy.Field()
+    google = scrapy.Field()
