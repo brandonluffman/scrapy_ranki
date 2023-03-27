@@ -10,6 +10,8 @@ from scrapy import Request
 import spacy
 from youtube_transcript_api import YouTubeTranscriptApi
 import time
+import requests
+from bs4 import BeautifulSoup
 
 
 class BlackwidowSpider(scrapy.Spider):
@@ -145,23 +147,46 @@ class BlackwidowSpider(scrapy.Spider):
             self.results['reddit'] = url_to_comments
 
         else:
-            # print('GOOGLE LINK')
             affiliate_to_text = {}    
             for serp_link in serp_link_list:
-                # print(serp_link)
-                user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
-                config = Config()
-                config.browser_user_agent = user_agent
+                headers = {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "en",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                }
+                r = requests.get(serp_link, headers=headers)
 
-                try:
-                    article = Article(serp_link, config=config)
-                    article.download()
-                    article.parse()
-                    affiliate_to_text[serp_link] = article.text
-                    # get_product_names(response=response,self=self,text=article.text)
-                except:
-                    pass
+                soup = BeautifulSoup(r.text, 'lxml')
+                affiliate_content = []
+                for heading in soup.find_all(["h1", "h2","h3","h4","h5","h6","li" ,"p"]):
+                    if len(heading.text.strip()) > 20:
+                        affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
+                    else:
+                        pass
+ 
+                final_content = " ".join(affiliate_content)
+                affiliate_to_text[serp_link] = final_content
+
             self.results['google'] = affiliate_to_text
+            # print('GOOGLE LINK')
+            # affiliate_to_text = {}    
+            # for serp_link in serp_link_list:
+            #     # print(serp_link)
+            #     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+            #     config = Config()
+            #     config.browser_user_agent = user_agent
+
+            #     try:
+            #         article = Article(serp_link, config=config)
+            #         article.download()
+            #         article.parse()
+            #         affiliate_to_text[serp_link] = article.text
+            #         # get_product_names(response=response,self=self,text=article.text)
+            #     except:
+            #         pass
+            # self.results['google'] = affiliate_to_text
+
+
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
@@ -269,7 +294,7 @@ class BlackwidowSpider(scrapy.Spider):
         for td in tds:
             links = td.css('a').attrib['href']
             if links:
-                self.results['card_descriptions'].append(links)
+                self.results['buying_options'].append(links)
 
     def parse_reviews(self, response):
         reviews = response.css('div.z6XoBf')
@@ -279,7 +304,7 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['card_descriptions'].append({response.url : {
+            self.results['reviews'].append({response.url : {
                 'title' : title,
                 'rating' : rating,
                 'date' : date,
