@@ -9,6 +9,7 @@ import re
 from scrapy import Request
 import spacy
 from youtube_transcript_api import YouTubeTranscriptApi
+import time
 
 
 class BlackwidowSpider(scrapy.Spider):
@@ -17,7 +18,7 @@ class BlackwidowSpider(scrapy.Spider):
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
         self.query = ''
-        self.entities = ['jabra elite 75t', 'bose quietcomfort', 'apple airpods max']
+        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
         self.results = {
             'entities': self.entities,
             'card_links': [],
@@ -90,7 +91,31 @@ class BlackwidowSpider(scrapy.Spider):
 
         # print(serp_link_list[0]) 
     
-        if 'https://www.reddit.com' in serp_link_list[0]:
+        if 'https://www.youtube.com' in serp_link_list[0]:
+            # print('YOUTUBE LINK')
+            video_to_transcript = {}
+            links = serp_link_list
+            ids = []
+            for link in links:
+                id = link.replace('https://www.youtube.com/watch?v=', '')
+                ids.append(id)
+
+            video_ids = ids
+            video_transcripts = {}
+            for video_id in video_ids:
+                video_transcripts[video_id] = YouTubeTranscriptApi.get_transcript(video_id)
+
+            for item in video_transcripts.items():
+                text = ''
+                for i in item[1]:
+                    text = text + i['text'] + ' '
+                    video_transcripts[item[0]] = text
+                    # get_product_names(response=response, self=self, text=text)
+            for k,v in video_transcripts.items():
+                video_to_transcript[k] = v
+            self.results['youtube'] = video_to_transcript
+
+        elif 'https://www.reddit.com' in serp_link_list[0]:
             # print('REDDIT LINK')
             # print("SERP LINK LIST", "----->", serp_link_list)
             reddit_read_only = praw.Reddit(client_id="6ziqexypJDMGiHf8tYfERA",         # your client id
@@ -118,31 +143,6 @@ class BlackwidowSpider(scrapy.Spider):
                 #     get_product_names(response=response, self=self, text=comment)
                 url_to_comments[url] = post_comments
             self.results['reddit'] = url_to_comments
-           
-
-        elif 'https://www.youtube.com' in serp_link_list[0]:
-            # print('YOUTUBE LINK')
-            video_to_transcript = {}
-            links = serp_link_list
-            ids = []
-            for link in links:
-                id = link.replace('https://www.youtube.com/watch?v=', '')
-                ids.append(id)
-
-            video_ids = ids
-            video_transcripts = {}
-            for video_id in video_ids:
-                video_transcripts[video_id] = YouTubeTranscriptApi.get_transcript(video_id)
-
-            for item in video_transcripts.items():
-                text = ''
-                for i in item[1]:
-                    text = text + i['text'] + ' '
-                    video_transcripts[item[0]] = text
-                    # get_product_names(response=response, self=self, text=text)
-            for k,v in video_transcripts.items():
-                video_to_transcript[k] = v
-            self.results['youtube'] = video_to_transcript
 
         else:
             print('GOOGLE LINK')
@@ -165,7 +165,7 @@ class BlackwidowSpider(scrapy.Spider):
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
-        first_row = response.css('div.i0X6df')[:6]
+        first_row = response.css('div.i0X6df')[:4]
         cards_with_stores = []
         for card in first_row:
             if card.css('a.iXEZD span::text').get() is not None:
@@ -193,7 +193,7 @@ class BlackwidowSpider(scrapy.Spider):
             for card in cards_with_max_num_stores:
                 review_count = int(card.css('span.QIrs8::text').get().split(" ")[-3].replace(',',''))
                 card_reviews_counts.append(review_count)
-            max_num_card_reviews = max(card_reviews_counts)
+            max_num_card_reviews = max(card_reviews_counts, default=0)
             for card in cards_with_max_num_stores:
                 review_count = int(card.css('span.QIrs8::text').get().split(" ")[-3].replace(',',''))
                 if review_count == max_num_card_reviews:
@@ -202,8 +202,12 @@ class BlackwidowSpider(scrapy.Spider):
         links = self.card_results
         
         for link in links:
-            self.results['card_links'].append(link)
+            if link not in self.results['card_links']:
+                self.results['card_links'].append(link)
+            else:
+                continue
             yield scrapy.Request(f'{link}', callback=self.parse_descriptions)
+        
 
 
 
@@ -234,8 +238,8 @@ class BlackwidowSpider(scrapy.Spider):
                 'product_rating' : float(product_rating),
                 'review_count' : int(product_review_count),
                 'product_img' : product_img,
-                'product_specs' : product_specs,
-                'product_descs' : product_descs, 
+                'product_specs' : {product_specs:product_descs},
+                # 'product_descs' : product_descs, 
                 'all_reviews_link': product_all_reviews_link,
                 'product_purchase_stores' : product_purchase_stores,
                 'product_buying_options' : product_buying_options,
@@ -282,7 +286,10 @@ class BlackwidowSpider(scrapy.Spider):
                 'content' : content,
                 'source' : source,
             }})
-        if len(self.results['reviews']) == len(self.review_links):
+            print(len(self.results['reviews']))
+            print(len(self.review_links))
+        if len(self.results['reviews']) == (len(self.review_links) * 10):
+            # self.results['card_links'] = list(set(self.results['card_links']))
             yield{
                 self.query: self.results
             }
