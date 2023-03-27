@@ -275,7 +275,7 @@ class BlackwidowSpider(scrapy.Spider):
         for td in tds:
             links = td.css('a').attrib['href']
             if links:
-                self.results['buying_options'].append(links)
+                self.results['card_descriptions'].append(links)
 
     def parse_reviews(self, response):
         reviews = response.css('div.z6XoBf')
@@ -285,7 +285,7 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['reviews'].append({response.url : {
+            self.results['card_descriptions'].append({response.url : {
                 'title' : title,
                 'rating' : rating,
                 'date' : date,
