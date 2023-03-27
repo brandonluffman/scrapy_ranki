@@ -145,10 +145,10 @@ class BlackwidowSpider(scrapy.Spider):
             self.results['reddit'] = url_to_comments
 
         else:
-            print('GOOGLE LINK')
+            # print('GOOGLE LINK')
             affiliate_to_text = {}    
             for serp_link in serp_link_list:
-                print(serp_link)
+                # print(serp_link)
                 user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
                 config = Config()
                 config.browser_user_agent = user_agent
@@ -176,7 +176,7 @@ class BlackwidowSpider(scrapy.Spider):
         for card in cards_with_stores:
             num_stores = int(card.css('a.iXEZD span::text').get().replace('+',''))
             stores_count_per_card.append(num_stores)
-        print(stores_count_per_card)
+        # print(stores_count_per_card)
         max_num_of_stores = max(stores_count_per_card, default=0)
         cards_with_max_num_stores = []
         for card in cards_with_stores:
@@ -238,10 +238,10 @@ class BlackwidowSpider(scrapy.Spider):
                 'product_rating' : float(product_rating),
                 'review_count' : int(product_review_count),
                 'product_img' : product_img,
-                'product_specs' : {product_specs:product_descs},
+                'product_specs' : list(zip(product_descs,product_specs)),
                 # 'product_descs' : product_descs, 
                 'all_reviews_link': product_all_reviews_link,
-                'product_purchase_stores' : product_purchase_stores,
+                # 'product_purchase_stores' : product_purchase_stores,
                 'product_buying_options' : product_buying_options,
         }})   
 
@@ -286,8 +286,8 @@ class BlackwidowSpider(scrapy.Spider):
                 'content' : content,
                 'source' : source,
             }})
-            print(len(self.results['reviews']))
-            print(len(self.review_links))
+            # print(len(self.results['reviews']))
+            # print(len(self.review_links))
         if len(self.results['reviews']) == (len(self.review_links) * 10):
             # self.results['card_links'] = list(set(self.results['card_links']))
             yield{
