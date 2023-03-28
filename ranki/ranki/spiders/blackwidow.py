@@ -28,8 +28,7 @@ class BlackwidowSpider(scrapy.Spider):
         self.results = {
             'query_name': '',
             'entities': self.entities,
-            'card_links': {},
-            'card_descriptions': [],
+            'cards': [],
             'reddit': [],
             'youtube': [],
             'google': []
@@ -149,7 +148,7 @@ class BlackwidowSpider(scrapy.Spider):
                 self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
-            affiliate_to_text = {}    
+               
             for serp_link in serp_link_list:
                 headers = {
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -165,7 +164,6 @@ class BlackwidowSpider(scrapy.Spider):
                         affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
                     else:
                         pass
- 
                 final_content = " ".join(affiliate_content)
                 affiliate_to_text[serp_link] = final_content
 
@@ -207,16 +205,20 @@ class BlackwidowSpider(scrapy.Spider):
                 if review_count == max_num_card_reviews:
                     self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
 
-        links = self.card_results
+        links = list(set(self.card_results))
         
         for link in links:
-            if link not in self.results['card_links']:
-                self.results['card_links'][link] = {
+            self.results['cards'].append(
+                {
+                    "link": link,
                     "buying_options": [],
                     "reviews": []
                 }
-            else:
-                continue
+            )
+            # self.results['cards'][link] = {
+            #     "buying_options": [],
+            #     "reviews": []
+            # }
             yield scrapy.Request(f'{link}', callback=self.parse_descriptions)
         
 
@@ -234,8 +236,6 @@ class BlackwidowSpider(scrapy.Spider):
         product_all_reviews_link = 'https://google.com' + descriptions.css('a.Ba4zEd').attrib['href']
         product_purchase_stores = descriptions.css('a.b5ycib::text').getall()
         product_buying_options_link = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
-        # print("PRODUCT BUYING OPTIONS:", product_buying_options_link)
-        # print("PRODUCT ALL REVIEWS:", product_all_reviews_link)
         self.review_links.append(product_all_reviews_link)
         self.buying_option_links.append(product_buying_options_link)
 
@@ -243,19 +243,22 @@ class BlackwidowSpider(scrapy.Spider):
             product_review_count = product_review_count.replace(',', '')
         else:
             pass
-
-        self.results['card_descriptions'].append({ response.url : {
-                'product_title' : product_title,
-                'product_description' : product_description,
-                'product_rating' : float(product_rating),
-                'review_count' : int(product_review_count),
-                'product_img' : product_img,
-                'product_specs' : list(zip(product_descs,product_specs)),
-                # 'product_descs' : product_descs, 
-                'all_reviews_link': product_all_reviews_link,
-                # 'product_purchase_stores' : product_purchase_stores,
-                'product_buying_options_link' : product_buying_options_link,
-        }})   
+        for i in range(len(self.results['cards'])):
+            if self.results['cards'][i]['link'] == response.url:
+                self.results['cards'][i]['card_description'] = {
+                        'product_title' : product_title,
+                        'product_description' : product_description,
+                        'product_rating' : float(product_rating),
+                        'review_count' : int(product_review_count),
+                        'product_img' : product_img,
+                        'product_specs' : list(zip(product_descs,product_specs)),
+                        # 'product_descs' : product_descs, 
+                        'all_reviews_link': product_all_reviews_link,
+                        # 'product_purchase_stores' : product_purchase_stores,
+                        'product_buying_options_link' : product_buying_options_link,
+                }
+            else:
+                continue   
 
         ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
         ### FOR CLARIFICATION, THE TRY STATEMENT GRABS THE LINK TO FIND ALL PRICES FROM ALL SITES ("COMPARE PRICES FROM 5+ STORES"), THE EXCEPT STATEMENT IS CALLED IF THE PRODUCT PAGE DOESN'T HAVE A COMPARE OPTIONS LINK AND JUST GRABS THE PRODUCT BUYING LINKS (AMAZON.COM, EBAY.COM, ETC)
@@ -283,8 +286,11 @@ class BlackwidowSpider(scrapy.Spider):
         for td in tds:
             link = td.css('a').attrib['href']
             if link:
-                if self.results['card_links'][card_link]:
-                    self.results['card_links'][card_link]['buying_options'].append(link)
+                for i in range(len(self.results['cards'])):
+                    if self.results['cards'][i]['link'] == card_link:
+                        self.results['cards'][i]['buying_options'].append(link)
+                    else:
+                        continue
 
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
@@ -296,14 +302,26 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['card_links'][card_link]['reviews'].append({
-                'review_link': response.url,
-                'title' : title,
-                'rating' : rating,
-                'date' : date,
-                'content' : content,
-                'source' : source,
-            })
+            for i in range(len(self.results['cards'])):
+                if self.results['cards'][i]['link'] == card_link:
+                    self.results['cards'][i]['reviews'].append({
+                        'review_link': response.url,
+                        'title' : title,
+                        'rating' : rating,
+                        'date' : date,
+                        'content' : content,
+                        'source' : source,
+                    })
+                else:
+                    continue
+            # self.results['cards'][card_link]['reviews'].append({
+            #     'review_link': response.url,
+            #     'title' : title,
+            #     'rating' : rating,
+            #     'date' : date,
+            #     'content' : content,
+            #     'source' : source,
+            # })
 
         # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
         if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):

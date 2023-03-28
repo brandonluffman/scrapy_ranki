@@ -29,12 +29,11 @@
 #     def store_db(self, item):
 #         self.cursor.execute(
 #             """INSERT INTO rankidb.queries 
-#                 (query_name,entities,card_links,card_descriptions,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s,%s)""", 
+#                 (query_name,entities,cards,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s)""", 
 #         (
 #             item["query_name"],
 #             item["entities"],
-#             item["card_links"],
-#             item["card_descriptions"],
+#             item["cards"],
 #             item['reddit'],
 #             item['youtube'],
 #             item['google']
