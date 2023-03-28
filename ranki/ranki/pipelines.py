@@ -33,7 +33,7 @@
 #         (
 #             item["query_name"],
 #             item["entities"],
-#             item["card_links"],
+#             item["cards"],
 #             item["card_descriptions"],
 #             item['reddit'],
 #             item['youtube'],
