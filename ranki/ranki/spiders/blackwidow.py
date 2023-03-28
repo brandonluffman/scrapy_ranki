@@ -12,7 +12,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
-from ranki.pipelines import BlackWidowPipeline
+# from ranki.pipelines import BlackWidowPipeline
 from ranki.items import RankiQuery
 import json
 
@@ -32,6 +32,9 @@ class BlackwidowSpider(scrapy.Spider):
             'entities': self.entities,
             'card_links': {},
             'card_descriptions': [],
+            'reddit': [],
+            'youtube': [],
+            'google': []
         }
         self.card_results = []
         self.review_links = []
@@ -101,7 +104,6 @@ class BlackwidowSpider(scrapy.Spider):
     
         if 'https://www.youtube.com' in serp_link_list[0]:
             # print('YOUTUBE LINK')
-            video_to_transcript = {}
             links = serp_link_list
             ids = []
             for link in links:
@@ -120,8 +122,7 @@ class BlackwidowSpider(scrapy.Spider):
                     video_transcripts[item[0]] = text
                     # get_product_names(response=response, self=self, text=text)
             for k,v in video_transcripts.items():
-                video_to_transcript[k] = v
-            self.results['youtube'] = video_to_transcript
+               self.results['youtube'].append({"video_id": k, 'transcript': v})
 
         elif 'https://www.reddit.com' in serp_link_list[0]:
             # print('REDDIT LINK')
@@ -133,8 +134,6 @@ class BlackwidowSpider(scrapy.Spider):
             urls = serp_link_list
             
             # Creating a submission object
-
-            url_to_comments = {}
             for url in urls:
                 submission = reddit_read_only.submission(url=url)
             
@@ -149,8 +148,7 @@ class BlackwidowSpider(scrapy.Spider):
                         post_comments.append(comment.body)
                 # for comment in post_comments:
                 #     get_product_names(response=response, self=self, text=comment)
-                url_to_comments[url] = post_comments
-            self.results['reddit'] = url_to_comments
+                self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
             affiliate_to_text = {}    
@@ -173,7 +171,7 @@ class BlackwidowSpider(scrapy.Spider):
                 final_content = " ".join(affiliate_content)
                 affiliate_to_text[serp_link] = final_content
 
-            self.results['google'] = affiliate_to_text
+            self.results['google'].append({"link": serp_link, "content": final_content})
             # print('GOOGLE LINK')
             # affiliate_to_text = {}    
             # for serp_link in serp_link_list:
@@ -327,24 +325,22 @@ class BlackwidowSpider(scrapy.Spider):
                 'content' : content,
                 'source' : source,
             })
-        print(self.parse_review_run_count,self.parse_buying_options_run_count)
-            # print(len(self.results['reviews']))
-            # print(len(self.review_links))
+
         # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
         if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
             # YIELDING IN MYSQL DB
             query_item = RankiQuery()
             item_fields = list(self.results.keys())
-            for field in item_fields:
-                if type(self.results[field] == list):
-                    query_item[field] = json.dumps(self.results[field])
-                else:
-                    query_item[field] = self.results[field]
+            # for field in item_fields:
+            #     if type(self.results[field] == list):
+            #         query_item[field] = json.dumps(self.results[field])
+            #     else:
+            #         query_item[field] = self.results[field]
             
 
-            #### YIELDING IN JSON FILE
-            # for item in item_fields:
-            #     query_item[item] = self.results[item]
+            ### YIELDING IN JSON FILE
+            for item in item_fields:
+                query_item[item] = self.results[item]
             
             yield query_item
 

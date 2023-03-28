@@ -5,41 +5,41 @@
 
 
 # useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
-import mysql.connector 
+# from itemadapter import ItemAdapter
+# import mysql.connector 
 
 
-class BlackWidowPipeline:
-    def __init__(self):
-        self.create_connection()
+# class BlackWidowPipeline:
+#     def __init__(self):
+#         self.create_connection()
     
-    def create_connection(self):
-        self.connection = mysql.connector.connect(
-            host='rankidb.c39jpvgy5agc.us-east-2.rds.amazonaws.com',
-            database='rankidb' ,
-            user='admin',
-            password='Phxntom10$!'
-        )
-        self.cursor = self.connection.cursor()
+#     def create_connection(self):
+#         self.connection = mysql.connector.connect(
+#             host='rankidb.c39jpvgy5agc.us-east-2.rds.amazonaws.com',
+#             database='rankidb' ,
+#             user='admin',
+#             password='Phxntom10$!'
+#         )
+#         self.cursor = self.connection.cursor()
     
-    def process_item(self,item,spider):
-        self.store_db(item)
-        return item
+#     def process_item(self,item,spider):
+#         self.store_db(item)
+#         return item
 
-    def store_db(self, item):
-        self.cursor.execute(
-            """INSERT INTO rankidb.queries 
-                (query_name,entities,card_links,card_descriptions,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s,%s)""", 
-        (
-            item["query_name"],
-            item["entities"],
-            item["card_links"],
-            item["card_descriptions"],
-            item['reddit'],
-            item['youtube'],
-            item['google']
-        ))
-        self.connection.commit()
+#     def store_db(self, item):
+#         self.cursor.execute(
+#             """INSERT INTO rankidb.queries 
+#                 (query_name,entities,card_links,card_descriptions,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s,%s)""", 
+#         (
+#             item["query_name"],
+#             item["entities"],
+#             item["card_links"],
+#             item["card_descriptions"],
+#             item['reddit'],
+#             item['youtube'],
+#             item['google']
+#         ))
+#         self.connection.commit()
 
 
 
