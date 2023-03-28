@@ -10,7 +10,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
-from ranki.pipelines import BlackWidowPipeline
+# from ranki.pipelines import BlackWidowPipeline
 from ranki.items import RankiQuery
 import json
 
@@ -24,18 +24,21 @@ class BlackwidowSpider(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
-        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
+        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max','beats studio 3']
         self.results = {
             'query_name': '',
             'entities': self.entities,
-            'card_links': [],
+            'card_links': {},
             'card_descriptions': [],
-            'buying_options': [],
-            'reviews': []
+            'reddit': [],
+            'youtube': [],
+            'google': []
         }
         self.card_results = []
         self.review_links = []
         self.buying_option_links = []
+        self.parse_review_run_count = 0
+        self.parse_buying_options_run_count = 0
 
     def start_requests(self):
         query = input("What would you like to get the links for? \n")
@@ -99,7 +102,6 @@ class BlackwidowSpider(scrapy.Spider):
     
         if 'https://www.youtube.com' in serp_link_list[0]:
             # print('YOUTUBE LINK')
-            video_to_transcript = {}
             links = serp_link_list
             ids = []
             for link in links:
@@ -118,8 +120,7 @@ class BlackwidowSpider(scrapy.Spider):
                     video_transcripts[item[0]] = text
                     # get_product_names(response=response, self=self, text=text)
             for k,v in video_transcripts.items():
-                video_to_transcript[k] = v
-            self.results['youtube'] = video_to_transcript
+               self.results['youtube'].append({"video_id": k, 'transcript': v})
 
         elif 'https://www.reddit.com' in serp_link_list[0]:
             # print('REDDIT LINK')
@@ -131,8 +132,6 @@ class BlackwidowSpider(scrapy.Spider):
             urls = serp_link_list
             
             # Creating a submission object
-
-            url_to_comments = {}
             for url in urls:
                 submission = reddit_read_only.submission(url=url)
             
@@ -147,8 +146,7 @@ class BlackwidowSpider(scrapy.Spider):
                         post_comments.append(comment.body)
                 # for comment in post_comments:
                 #     get_product_names(response=response, self=self, text=comment)
-                url_to_comments[url] = post_comments
-            self.results['reddit'] = url_to_comments
+                self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
             affiliate_to_text = {}    
@@ -171,7 +169,30 @@ class BlackwidowSpider(scrapy.Spider):
                 final_content = " ".join(affiliate_content)
                 affiliate_to_text[serp_link] = final_content
 
+<<<<<<< HEAD
             self.results['google'] = affiliate_to_text
+=======
+            self.results['google'].append({"link": serp_link, "content": final_content})
+            # print('GOOGLE LINK')
+            # affiliate_to_text = {}    
+            # for serp_link in serp_link_list:
+            #     # print(serp_link)
+            #     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+            #     config = Config()
+            #     config.browser_user_agent = user_agent
+
+            #     try:
+            #         article = Article(serp_link, config=config)
+            #         article.download()
+            #         article.parse()
+            #         affiliate_to_text[serp_link] = article.text
+            #         # get_product_names(response=response,self=self,text=article.text)
+            #     except:
+            #         pass
+            # self.results['google'] = affiliate_to_text
+
+
+>>>>>>> 81a73ca6e5eaaa6d35e320a9235f95b51420f144
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
@@ -213,7 +234,10 @@ class BlackwidowSpider(scrapy.Spider):
         
         for link in links:
             if link not in self.results['card_links']:
-                self.results['card_links'].append(link)
+                self.results['card_links'][link] = {
+                    "buying_options": [],
+                    "reviews": []
+                }
             else:
                 continue
             yield scrapy.Request(f'{link}', callback=self.parse_descriptions)
@@ -232,10 +256,11 @@ class BlackwidowSpider(scrapy.Spider):
         product_descs = descriptions.css('td.hCi1Vc::text').getall()
         product_all_reviews_link = 'https://google.com' + descriptions.css('a.Ba4zEd').attrib['href']
         product_purchase_stores = descriptions.css('a.b5ycib::text').getall()
-        product_buying_options = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
-
+        product_buying_options_link = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+        # print("PRODUCT BUYING OPTIONS:", product_buying_options_link)
+        # print("PRODUCT ALL REVIEWS:", product_all_reviews_link)
         self.review_links.append(product_all_reviews_link)
-        self.buying_option_links.append(product_buying_options)
+        self.buying_option_links.append(product_buying_options_link)
 
         if ',' in product_review_count:
             product_review_count = product_review_count.replace(',', '')
@@ -252,7 +277,7 @@ class BlackwidowSpider(scrapy.Spider):
                 # 'product_descs' : product_descs, 
                 'all_reviews_link': product_all_reviews_link,
                 # 'product_purchase_stores' : product_purchase_stores,
-                'product_buying_options' : product_buying_options,
+                'product_buying_options_link' : product_buying_options_link,
         }})   
 
         ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
@@ -269,19 +294,24 @@ class BlackwidowSpider(scrapy.Spider):
         #     product_buying_options.append(product_buying_option)
         
         for review_link in self.review_links:
-            yield scrapy.Request(f'{review_link}', callback=self.parse_reviews)
+            yield scrapy.Request(f'{review_link}', callback=self.parse_reviews,meta={"card_link": response.url})
 
         for buying_option in self.buying_option_links:
-            yield scrapy.Request(f'{buying_option}', callback=self.parse_buying_options)
+            yield scrapy.Request(f'{buying_option}', callback=self.parse_buying_options,meta={"card_link": response.url})
 
     def parse_buying_options(self, response):
+        self.parse_buying_options_run_count += 1
+        card_link = response.meta['card_link']
         tds = response.css('div.UAVKwf')
         for td in tds:
-            links = td.css('a').attrib['href']
-            if links:
-                self.results['buying_options'].append(links)
+            link = td.css('a').attrib['href']
+            if link:
+                if self.results['card_links'][card_link]:
+                    self.results['card_links'][card_link]['buying_options'].append(link)
 
     def parse_reviews(self, response):
+        self.parse_review_run_count += 1
+        card_link = response.meta['card_link']
         reviews = response.css('div.z6XoBf')
         for review in reviews:
             title = review.css('.P3O8Ne::text').get()
@@ -289,25 +319,35 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['reviews'].append({response.url : {
+            self.results['card_links'][card_link]['reviews'].append({
+                'review_link': response.url,
                 'title' : title,
                 'rating' : rating,
                 'date' : date,
                 'content' : content,
                 'source' : source,
-            }})
-            # print(len(self.results['reviews']))
-            # print(len(self.review_links))
-        if len(self.results['reviews']) == (len(self.review_links) * 10):
-            # self.results['card_links'] = list(set(self.results['card_links']))
+            })
+
+        # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
+        if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
+            # YIELDING IN MYSQL DB
             query_item = RankiQuery()
             item_fields = list(self.results.keys())
-            for field in item_fields:
-                if type(self.results[field] == list):
-                    query_item[field] = json.dumps(self.results[field])
-                else:
-                    query_item[field] = self.results[field]
+            # for field in item_fields:
+            #     if type(self.results[field] == list):
+            #         query_item[field] = json.dumps(self.results[field])
+            #     else:
+            #         query_item[field] = self.results[field]
+            
+
+            ### YIELDING IN JSON FILE
+            for item in item_fields:
+                query_item[item] = self.results[item]
+            
             yield query_item
+
+
+
 
             # next_page = response.css('.sh-fp__pagination-button::attr(data-url)').get()
 

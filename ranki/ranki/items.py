@@ -11,8 +11,6 @@ class RankiQuery(scrapy.Item):
     entities = scrapy.Field()
     card_links = scrapy.Field()
     card_descriptions = scrapy.Field()
-    buying_options = scrapy.Field()
-    reviews = scrapy.Field()
     reddit = scrapy.Field()
     youtube = scrapy.Field()
     google = scrapy.Field()
