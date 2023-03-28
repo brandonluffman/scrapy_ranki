@@ -29,7 +29,6 @@ class BlackwidowSpider(scrapy.Spider):
             'query_name': '',
             'entities': self.entities,
             'cards': [],
-            'card_descriptions': [],
             'reddit': [],
             'youtube': [],
             'google': []
