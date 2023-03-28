@@ -29,14 +29,12 @@ class BlackWidowPipeline:
     def store_db(self, item):
         self.cursor.execute(
             """INSERT INTO rankidb.queries 
-                (query_name,entities,card_links,card_descriptions,buying_options,reviews,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s,%s,%s,%s)""", 
+                (query_name,entities,card_links,card_descriptions,reddit_links,youtube_links,affiliate_links)  values (%s,%s,%s,%s,%s,%s,%s)""", 
         (
             item["query_name"],
             item["entities"],
             item["card_links"],
             item["card_descriptions"],
-            item["buying_options"],
-            item['reviews'],
             item['reddit'],
             item['youtube'],
             item['google']
