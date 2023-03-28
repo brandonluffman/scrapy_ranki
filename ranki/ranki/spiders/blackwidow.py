@@ -1,8 +1,6 @@
 import scrapy
 from collections import Counter
 import datetime
-from newspaper import Article
-from newspaper import Config
 import praw
 from praw.models import MoreComments
 import re
@@ -151,7 +149,7 @@ class BlackwidowSpider(scrapy.Spider):
                 self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
-            affiliate_to_text = {}    
+               
             for serp_link in serp_link_list:
                 headers = {
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -167,10 +165,7 @@ class BlackwidowSpider(scrapy.Spider):
                         affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
                     else:
                         pass
- 
                 final_content = " ".join(affiliate_content)
-                affiliate_to_text[serp_link] = final_content
-
                 self.results['google'].append({"link": serp_link, "content": final_content})
             # print('GOOGLE LINK')
             # affiliate_to_text = {}    
