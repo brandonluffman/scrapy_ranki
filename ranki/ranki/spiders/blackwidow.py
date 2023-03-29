@@ -24,10 +24,9 @@ class BlackwidowSpider(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
-        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max','beats studio 3']
+        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
         self.results = {
             'query_name': '',
-            'entities': self.entities,
             'cards': [],
             'reddit': [],
             'youtube': [],
@@ -59,8 +58,8 @@ class BlackwidowSpider(scrapy.Spider):
         google_query = query
         reddit_query = (remove + ' reddit')
         youtube_query = (query + ' youtube') 
-        start_urls = ["https://www.google.com/search?q=" + google_query, "https://www.google.com/search?q=" + reddit_query, "https://www.google.com/search?q=" + youtube_query]
-        card_urls = ['https://www.google.com/search?tbm=shop&q=' + product for product in self.entities]
+        start_urls = [f"https://www.google.com/search?q={google_query}", f"https://www.google.com/search?q={reddit_query}", f"https://www.google.com/search?q={youtube_query}"]
+        card_urls = [f'https://www.google.com/search?tbm=shop&q={product}' for product in self.entities]
         for url in start_urls:
             yield Request(url=url,callback=self.parse)
         for card_url in card_urls:
@@ -143,8 +142,6 @@ class BlackwidowSpider(scrapy.Spider):
                         continue
                     else:
                         post_comments.append(comment.body)
-                # for comment in post_comments:
-                #     get_product_names(response=response, self=self, text=comment)
                 self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
@@ -210,7 +207,8 @@ class BlackwidowSpider(scrapy.Spider):
                 continue
         if len(cards_with_max_num_stores) == 1:
             card = cards_with_max_num_stores[0]
-            self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
+            if domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'] not in self.card_results:
+                self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
         else:
             card_reviews_counts = []
             for card in cards_with_max_num_stores:
@@ -220,26 +218,20 @@ class BlackwidowSpider(scrapy.Spider):
             for card in cards_with_max_num_stores:
                 review_count = int(card.css('span.QIrs8::text').get().split(" ")[-3].replace(',',''))
                 if review_count == max_num_card_reviews:
-                    self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
-
-        links = list(set(self.card_results))
+                    if domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'] not in self.card_results:
+                        self.card_results.append(domain + card.css('div.sh-dgr__content span.C7Lkve a').attrib['href'])
+                        break
+        if len(self.card_results) == len(self.entities):
+            for i in range(len(self.card_results)):
+                self.results['cards'].append(
+                    {
+                        "link": self.card_results[i],
+                        "buying_options": [],
+                        "reviews": []
+                    }
+                )
+                yield scrapy.Request(f'{self.card_results[i]}', callback=self.parse_descriptions)
         
-        for link in links:
-            self.results['cards'].append(
-                {
-                    "link": link,
-                    "buying_options": [],
-                    "reviews": []
-                }
-            )
-            # self.results['cards'][link] = {
-            #     "buying_options": [],
-            #     "reviews": []
-            # }
-            yield scrapy.Request(f'{link}', callback=self.parse_descriptions)
-        
-
-
 
     def parse_descriptions(self, response):
         descriptions = response.css('div.sg-product__dpdp-c')
@@ -262,7 +254,7 @@ class BlackwidowSpider(scrapy.Spider):
             pass
         for i in range(len(self.results['cards'])):
             if self.results['cards'][i]['link'] == response.url:
-                self.results['cards'][i]['card_description'] = {
+                self.results['cards'][i]['description'] = {
                         'product_title' : product_title,
                         'product_description' : product_description,
                         'product_rating' : float(product_rating),
