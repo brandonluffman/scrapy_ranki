@@ -337,16 +337,16 @@ class BlackwidowSpider(scrapy.Spider):
             # YIELDING IN MYSQL DB
             query_item = RankiQuery()
             item_fields = list(self.results.keys())
-            # for field in item_fields:
-            #     if type(self.results[field] == list):
-            #         query_item[field] = json.dumps(self.results[field])
-            #     else:
-            #         query_item[field] = self.results[field]
+            for field in item_fields:
+                if type(self.results[field] == list):
+                    query_item[field] = json.dumps(self.results[field])
+                else:
+                    query_item[field] = self.results[field]
             
 
             ### YIELDING IN JSON FILE
-            for item in item_fields:
-                query_item[item] = self.results[item]
+            # for item in item_fields:
+            #     query_item[item] = self.results[item]
             
             yield query_item
 
