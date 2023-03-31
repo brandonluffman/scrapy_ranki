@@ -90,12 +90,18 @@ class BlackwidowSpider(scrapy.Spider):
         if serp_results:
             for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
-                serp_link_list.append(serp_link)
+                serp_title = serp_result.css('h3::text')
+                serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
+                serp_link_list.append(serp_link,serp_favicon,serp_title)
+            
         else:
             serp_results = serps.css('div.DhN8Cf')
             for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
-                serp_link_list.append(serp_link)
+                serp_title = serp_result.css('h3::text')
+                serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
+                serp_link_list.append(serp_link, serp_favicon, serp_title)
+
 
         # print(serp_link_list[0]) 
     
@@ -279,7 +285,7 @@ class BlackwidowSpider(scrapy.Spider):
             if link:
                 for i in range(len(self.results['cards'])):
                     if self.results['cards'][i]['link'] == card_link:
-                        self.results['cards'][i]['buying_options'].append(link)
+                        self.results['cards'][i]['buying_options'].append(link[7:])
                     else:
                         continue
 
