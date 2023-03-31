@@ -60,11 +60,11 @@ class BlackwidowSpider(scrapy.Spider):
         youtube_query = (query + ' youtube') 
         start_urls = [f"https://www.google.com/search?q={google_query}", f"https://www.google.com/search?q={reddit_query}", f"https://www.google.com/search?q={youtube_query}"]
         card_urls = [f'https://www.google.com/search?tbm=shop&q={product}' for product in self.entities]
-        entities = [product for product in self.entities]
+        # entities = [product for product in self.entities]
         for url in start_urls:
             yield Request(url=url,callback=self.parse)
-        for i in range(len(card_urls)):
-            yield scrapy.Request(url=card_urls[i],callback=self.parse_cards)
+        for card_url in card_urls:
+            yield scrapy.Request(url=card_url,callback=self.parse_cards)
         
 
 
@@ -90,34 +90,39 @@ class BlackwidowSpider(scrapy.Spider):
         if serp_results:
             for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
-                serp_title = serp_result.css('h3::text')
+                serp_title = serp_result.css('h3::text').getall()
                 serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
-                serp_link_list.append(serp_link,serp_favicon,serp_title)
-            
+                serp_link_list.append({
+                    'link': serp_link,
+                    'favicon': serp_favicon,
+                    'title': serp_title
+                })
         else:
             serp_results = serps.css('div.DhN8Cf')
             for serp_result in serp_results[:3]:
                 serp_link = serp_result.css('a').attrib['href']
-                serp_title = serp_result.css('h3::text')
+                serp_title = serp_result.css('h3::text').getall()
                 serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
-                serp_link_list.append(serp_link, serp_favicon, serp_title)
+                serp_link_list.append({
+                    'link': serp_link,
+                    'favicon': serp_favicon,
+                    'title': serp_title
+                })
 
 
         # print(serp_link_list[0]) 
     
-        if 'https://www.youtube.com' in serp_link_list[0]:
+        if 'https://www.youtube.com' in serp_link_list[0]['link']:
             # print('YOUTUBE LINK')
-            links = serp_link_list
+            links = [serp_obj['link'] for serp_obj in serp_link_list]
             ids = []
             for link in links:
                 id = link.replace('https://www.youtube.com/watch?v=', '')
                 ids.append(id)
-
             video_ids = ids
             video_transcripts = {}
             for video_id in video_ids:
                 video_transcripts[video_id] = YouTubeTranscriptApi.get_transcript(video_id)
-
             for item in video_transcripts.items():
                 text = ''
                 for i in item[1]:
@@ -125,16 +130,16 @@ class BlackwidowSpider(scrapy.Spider):
                     video_transcripts[item[0]] = text
                     # get_product_names(response=response, self=self, text=text)
             for k,v in video_transcripts.items():
-               self.results['youtube'].append({"video_id": k, 'transcript': v})
+               self.results['youtube'].append({"link": f'https://www.youtube.com/watch?v={k}',"video_id": k, 'transcript': v})
 
-        elif 'https://www.reddit.com' in serp_link_list[0]:
+        elif 'https://www.reddit.com' in serp_link_list[0]['link']:
             # print('REDDIT LINK')
             # print("SERP LINK LIST", "----->", serp_link_list)
             reddit_read_only = praw.Reddit(client_id="6ziqexypJDMGiHf8tYfERA",         # your client id
                            client_secret="gBa1uvr2syOEbjxKbD8yzPsPo_fAbA",      # your client secret
                            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")        # your user agent
 
-            urls = serp_link_list
+            urls = [serp_obj['link'] for serp_obj in serp_link_list]
             
             # Creating a submission object
             for url in urls:
@@ -152,14 +157,16 @@ class BlackwidowSpider(scrapy.Spider):
                 self.results['reddit'].append({"link": url, "comments": post_comments})
 
         else:
-               
-            for serp_link in serp_link_list:
+            for serp_obj in serp_link_list:
+                link = serp_obj['link']
+                favicon = serp_obj['favicon']
+                title = serp_obj['title'][0]
                 headers = {
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "en",
                     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
                 }
-                r = requests.get(serp_link, headers=headers)
+                r = requests.get(link, headers=headers)
 
                 soup = BeautifulSoup(r.text, 'lxml')
                 affiliate_content = []
@@ -169,8 +176,7 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         pass
                 final_content = " ".join(affiliate_content)
-
-            self.results['google'].append({"link": serp_link, "text": final_content})
+                self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
