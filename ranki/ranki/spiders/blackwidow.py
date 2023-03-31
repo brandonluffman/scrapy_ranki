@@ -5,7 +5,7 @@ import praw
 from praw.models import MoreComments
 import re
 from scrapy import Request
-# import spacy
+import spacy
 from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
@@ -162,8 +162,9 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         pass
                 final_content = " ".join(affiliate_content)
+                affiliate_to_text[serp_link] = final_content
 
-            self.results['google'].append({"link": serp_link, "text": final_content})
+            self.results['google'] = affiliate_to_text
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
@@ -178,6 +179,7 @@ class BlackwidowSpider(scrapy.Spider):
         for card in cards_with_stores:
             num_stores = int(card.css('a.iXEZD span::text').get().replace('+',''))
             stores_count_per_card.append(num_stores)
+        # print(stores_count_per_card)
         max_num_of_stores = max(stores_count_per_card, default=0)
         cards_with_max_num_stores = []
         for card in cards_with_stores:
@@ -278,7 +280,7 @@ class BlackwidowSpider(scrapy.Spider):
             if link:
                 for i in range(len(self.results['cards'])):
                     if self.results['cards'][i]['link'] == card_link:
-                        self.results['cards'][i]['buying_options'].append(link[7:])
+                        self.results['cards'][i]['buying_options'].append(link)
                     else:
                         continue
 
