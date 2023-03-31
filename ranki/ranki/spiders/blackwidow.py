@@ -276,13 +276,9 @@ class BlackwidowSpider(scrapy.Spider):
         card_link = response.meta['card_link']
         tds = response.css('div.UAVKwf')
         for td in tds:
-            link = td.css('a').attrib['href']
-            if link:
-                for i in range(len(self.results['cards'])):
-                    if self.results['cards'][i]['link'] == card_link:
-                        self.results['cards'][i]['buying_options'].append(link)
-                    else:
-                        continue
+            links = td.css('a').attrib['href']
+            if links:
+                self.results['card_descriptions'].append(links)
 
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
@@ -294,47 +290,20 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            for i in range(len(self.results['cards'])):
-                if self.results['cards'][i]['link'] == card_link:
-                    self.results['cards'][i]['reviews'].append({
-                        'review_link': response.url,
-                        'title' : title,
-                        'rating' : rating,
-                        'date' : date,
-                        'content' : content,
-                        'source' : source,
-                    })
-                else:
-                    continue
-            # self.results['cards'][card_link]['reviews'].append({
-            #     'review_link': response.url,
-            #     'title' : title,
-            #     'rating' : rating,
-            #     'date' : date,
-            #     'content' : content,
-            #     'source' : source,
-            # })
-
-        # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
-        if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
-            # YIELDING IN MYSQL DB
-            query_item = RankiQuery()
-            item_fields = list(self.results.keys())
-            for field in item_fields:
-                if type(self.results[field] == list):
-                    query_item[field] = json.dumps(self.results[field])
-                else:
-                    query_item[field] = self.results[field]
-            
-
-            ### YIELDING IN JSON FILE
-            # for item in item_fields:
-            #     query_item[item] = self.results[item]
-            
-            yield query_item
-
-
-
+            self.results['card_descriptions'].append({response.url : {
+                'title' : title,
+                'rating' : rating,
+                'date' : date,
+                'content' : content,
+                'source' : source,
+            }})
+            # print(len(self.results['reviews']))
+            # print(len(self.review_links))
+        if len(self.results['reviews']) == (len(self.review_links) * 10):
+            # self.results['card_links'] = list(set(self.results['card_links']))
+            yield{
+                self.query: self.results
+            }
 
             # next_page = response.css('.sh-fp__pagination-button::attr(data-url)').get()
 
