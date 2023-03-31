@@ -162,9 +162,8 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         pass
                 final_content = " ".join(affiliate_content)
-                affiliate_to_text[serp_link] = final_content
 
-            self.results['google'] = affiliate_to_text
+            self.results['google'].append({"link": serp_link, "text": final_content})
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
@@ -179,7 +178,6 @@ class BlackwidowSpider(scrapy.Spider):
         for card in cards_with_stores:
             num_stores = int(card.css('a.iXEZD span::text').get().replace('+',''))
             stores_count_per_card.append(num_stores)
-        # print(stores_count_per_card)
         max_num_of_stores = max(stores_count_per_card, default=0)
         cards_with_max_num_stores = []
         for card in cards_with_stores:
@@ -276,11 +274,6 @@ class BlackwidowSpider(scrapy.Spider):
         card_link = response.meta['card_link']
         tds = response.css('div.UAVKwf')
         for td in tds:
-<<<<<<< HEAD
-            links = td.css('a').attrib['href']
-            if links:
-                self.results['card_descriptions'].append(links)
-=======
             link = td.css('a').attrib['href']
             if link:
                 for i in range(len(self.results['cards'])):
@@ -288,7 +281,6 @@ class BlackwidowSpider(scrapy.Spider):
                         self.results['cards'][i]['buying_options'].append(link)
                     else:
                         continue
->>>>>>> parent of d3b2300 (pulling)
 
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
