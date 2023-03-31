@@ -163,26 +163,8 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         pass
                 final_content = " ".join(affiliate_content)
-                self.results['google'].append({"link": serp_link, "content": final_content})
-            # print('GOOGLE LINK')
-            # affiliate_to_text = {}    
-            # for serp_link in serp_link_list:
-            #     # print(serp_link)
-            #     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
-            #     config = Config()
-            #     config.browser_user_agent = user_agent
 
-            #     try:
-            #         article = Article(serp_link, config=config)
-            #         article.download()
-            #         article.parse()
-            #         affiliate_to_text[serp_link] = article.text
-            #         # get_product_names(response=response,self=self,text=article.text)
-            #     except:
-            #         pass
-            # self.results['google'] = affiliate_to_text
-
-
+            self.results['google'].append({"link": serp_link, "text": final_content})
 
     def parse_cards(self, response):
         domain = 'https://www.google.com/'
