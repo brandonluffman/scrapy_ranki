@@ -114,23 +114,30 @@ class BlackwidowSpider(scrapy.Spider):
     
         if 'https://www.youtube.com' in serp_link_list[0]['link']:
             # print('YOUTUBE LINK')
-            links = [serp_obj['link'] for serp_obj in serp_link_list]
-            ids = []
-            for link in links:
+           
+            for serp_obj in serp_link_list:
+                link = serp_obj['link']
+                title = serp_obj['title'][0]
                 id = link.replace('https://www.youtube.com/watch?v=', '')
-                ids.append(id)
-            video_ids = ids
-            video_transcripts = {}
-            for video_id in video_ids:
-                video_transcripts[video_id] = YouTubeTranscriptApi.get_transcript(video_id)
-            for item in video_transcripts.items():
+                transcript = YouTubeTranscriptApi.get_transcript(id)
                 text = ''
-                for i in item[1]:
+                for i in transcript:
                     text = text + i['text'] + ' '
-                    video_transcripts[item[0]] = text
-                    # get_product_names(response=response, self=self, text=text)
-            for k,v in video_transcripts.items():
-               self.results['youtube'].append({"link": f'https://www.youtube.com/watch?v={k}',"video_id": k, 'transcript': v})
+                transcript = text
+                self.results['youtube'].append({"title": title, "link": f'https://www.youtube.com/watch?v={id}',"video_id": id, 'transcript': text})
+             # ids = []
+            # # video_ids = ids
+            # # video_transcripts = {}
+            # for video_id in video_ids:
+            #     video_transcripts[video_id] = YouTubeTranscriptApi.get_transcript(video_id)
+            # for item in video_transcripts.items():
+            #     text = ''
+            #     for i in item[1]:
+            #         text = text + i['text'] + ' '
+            #         video_transcripts[item[0]] = text
+            #         # get_product_names(response=response, self=self, text=text)
+            # for k,v in video_transcripts.items():
+            #    self.results['youtube'].append({"link": f'https://www.youtube.com/watch?v={k}',"video_id": k, 'transcript': v})
 
         elif 'https://www.reddit.com' in serp_link_list[0]['link']:
             # print('REDDIT LINK')
@@ -139,11 +146,13 @@ class BlackwidowSpider(scrapy.Spider):
                            client_secret="gBa1uvr2syOEbjxKbD8yzPsPo_fAbA",      # your client secret
                            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")        # your user agent
 
-            urls = [serp_obj['link'] for serp_obj in serp_link_list]
-            
+            # urls = [serp_obj['link'] for serp_obj in serp_link_list]
+            for serp_obj in serp_link_list:
+                link = serp_obj['link']
+                title = serp_obj['title'][0]
+
             # Creating a submission object
-            for url in urls:
-                submission = reddit_read_only.submission(url=url)
+                submission = reddit_read_only.submission(url=link)
             
                 post_comments = []
 
@@ -154,7 +163,7 @@ class BlackwidowSpider(scrapy.Spider):
                         continue
                     else:
                         post_comments.append(comment.body)
-                self.results['reddit'].append({"link": url, "comments": post_comments})
+                self.results['reddit'].append({"title":title, "link": link, "comments": post_comments})
 
         else:
             for serp_obj in serp_link_list:
