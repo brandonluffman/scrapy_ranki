@@ -24,7 +24,7 @@ class BlackwidowSpider(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
-        self.entities = ['sony wh-1000xm5', 'bose quietcomfort', 'apple airpods max']
+        self.entities = ['apple airpods max','sony wh-1000xm5','bose quietcomfort']
         self.results = {
             'query_name': '',
             'cards': [],
@@ -60,10 +60,11 @@ class BlackwidowSpider(scrapy.Spider):
         youtube_query = (query + ' youtube') 
         start_urls = [f"https://www.google.com/search?q={google_query}", f"https://www.google.com/search?q={reddit_query}", f"https://www.google.com/search?q={youtube_query}"]
         card_urls = [f'https://www.google.com/search?tbm=shop&q={product}' for product in self.entities]
+        entities = [product for product in self.entities]
         for url in start_urls:
             yield Request(url=url,callback=self.parse)
-        for card_url in card_urls:
-            yield scrapy.Request(url=card_url,callback=self.parse_cards)
+        for i in range(len(card_urls)):
+            yield scrapy.Request(url=card_urls[i],callback=self.parse_cards)
         
 
 
@@ -253,15 +254,15 @@ class BlackwidowSpider(scrapy.Spider):
         ### HAVE TO ADJUST TO ONLY APPEND BUYING OPTION LINKS TO SELF.RESULTS IF THE LINK IS A "COMPARE PRICES FROM 5+ STORES" IN THE TRY STATEMENT AND TO NOT APPEND PRODUCT BUYING OPTIONS IF THE EXCEPT STATEMENT IS CALLED AND IT GRABS THE BUYING OPTION LINKS
         ### FOR CLARIFICATION, THE TRY STATEMENT GRABS THE LINK TO FIND ALL PRICES FROM ALL SITES ("COMPARE PRICES FROM 5+ STORES"), THE EXCEPT STATEMENT IS CALLED IF THE PRODUCT PAGE DOESN'T HAVE A COMPARE OPTIONS LINK AND JUST GRABS THE PRODUCT BUYING LINKS (AMAZON.COM, EBAY.COM, ETC)
         
-        # product_buying_options = []
-        # product_buying_option = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
-        # if product_buying_option is None:
-        #     diver = descriptions.css('div.UAVKwf')
-        #     for div in diver:
-        #         test = div.css('a').attrib['href']
-        #         product_buying_options.append(test)
-        # else:
-        #     product_buying_options.append(product_buying_option)
+        product_buying_options = []
+        product_buying_option = 'https://google.com' + descriptions.css('a.LfaE9').attrib['href']
+        if product_buying_option is None:
+            diver = descriptions.css('div.UAVKwf')
+            for div in diver:
+                test = div.css('a').attrib['href']
+                product_buying_options.append(test)
+        else:
+            product_buying_options.append(product_buying_option)
         
         for review_link in self.review_links:
             yield scrapy.Request(f'{review_link}', callback=self.parse_reviews,meta={"card_link": response.url})
@@ -292,20 +293,47 @@ class BlackwidowSpider(scrapy.Spider):
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
             content = review.css('.g1lvWe div::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
-            self.results['card_descriptions'].append({response.url : {
-                'title' : title,
-                'rating' : rating,
-                'date' : date,
-                'content' : content,
-                'source' : source,
-            }})
-            # print(len(self.results['reviews']))
-            # print(len(self.review_links))
-        if len(self.results['reviews']) == (len(self.review_links) * 10):
-            # self.results['card_links'] = list(set(self.results['card_links']))
-            yield{
-                self.query: self.results
-            }
+            for i in range(len(self.results['cards'])):
+                if self.results['cards'][i]['link'] == card_link:
+                    self.results['cards'][i]['reviews'].append({
+                        'review_link': response.url,
+                        'title' : title,
+                        'rating' : rating,
+                        'date' : date,
+                        'content' : content,
+                        'source' : source,
+                    })
+                else:
+                    continue
+            # self.results['cards'][card_link]['reviews'].append({
+            #     'review_link': response.url,
+            #     'title' : title,
+            #     'rating' : rating,
+            #     'date' : date,
+            #     'content' : content,
+            #     'source' : source,
+            # })
+
+        # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
+        if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
+            # YIELDING IN MYSQL DB
+            query_item = RankiQuery()
+            item_fields = list(self.results.keys())
+            # for field in item_fields:
+            #     if type(self.results[field] == list):
+            #         query_item[field] = json.dumps(self.results[field])
+            #     else:
+            #         query_item[field] = self.results[field]
+            
+
+            ### YIELDING IN JSON FILE
+            for item in item_fields:
+                query_item[item] = self.results[item]
+            
+            yield query_item
+
+
+
 
             # next_page = response.css('.sh-fp__pagination-button::attr(data-url)').get()
 
