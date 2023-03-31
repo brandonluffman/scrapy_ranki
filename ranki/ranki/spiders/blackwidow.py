@@ -276,9 +276,19 @@ class BlackwidowSpider(scrapy.Spider):
         card_link = response.meta['card_link']
         tds = response.css('div.UAVKwf')
         for td in tds:
+<<<<<<< HEAD
             links = td.css('a').attrib['href']
             if links:
                 self.results['card_descriptions'].append(links)
+=======
+            link = td.css('a').attrib['href']
+            if link:
+                for i in range(len(self.results['cards'])):
+                    if self.results['cards'][i]['link'] == card_link:
+                        self.results['cards'][i]['buying_options'].append(link)
+                    else:
+                        continue
+>>>>>>> parent of d3b2300 (pulling)
 
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
