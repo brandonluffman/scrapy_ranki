@@ -10,17 +10,14 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
-# from ranki.pipelines import BlackWidowPipeline
 from ranki.items import RankiQuery
 import json
 
 
+
 class BlackwidowSpider(scrapy.Spider):
     name = "blackwidow"
-
-    # custom_settings = {
-    #     'ITEM_PIPELINES': {BlackWidowPipeline: 300}
-    # }
+    
 
     def __init__(self, name=None, **kwargs):
         super(BlackwidowSpider,self).__init__(name, **kwargs) 
@@ -37,6 +34,7 @@ class BlackwidowSpider(scrapy.Spider):
         self.buying_option_links = []
         self.parse_review_run_count = 0
         self.parse_buying_options_run_count = 0
+        self.entity_indexer = 0
 
     def start_requests(self):
         query = input("What would you like to get the links for? \n")
@@ -60,11 +58,15 @@ class BlackwidowSpider(scrapy.Spider):
         youtube_query = (query + ' youtube') 
         start_urls = [f"https://www.google.com/search?q={google_query}", f"https://www.google.com/search?q={reddit_query}", f"https://www.google.com/search?q={youtube_query}"]
         card_urls = [f'https://www.google.com/search?tbm=shop&q={product}' for product in self.entities]
-        # entities = [product for product in self.entities]
+        link_to_entity = {}
+        for ent in self.entities:
+            link_to_entity[f'https://www.google.com/search?tbm=shop&q={ent}'] = ent
+      
+
         for url in start_urls:
             yield Request(url=url,callback=self.parse)
-        for card_url in card_urls:
-            yield scrapy.Request(url=card_url,callback=self.parse_cards)
+        for url in card_urls:
+            yield Request(url=url,callback=self.parse_cards,meta={'item':link_to_entity})
         
 
 
@@ -188,6 +190,7 @@ class BlackwidowSpider(scrapy.Spider):
                 self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
 
     def parse_cards(self, response):
+        item = list(response.meta.get('item').values())
         domain = 'https://www.google.com/'
         first_row = response.css('div.i0X6df')[:4]
         cards_with_stores = []
@@ -228,11 +231,13 @@ class BlackwidowSpider(scrapy.Spider):
             for i in range(len(self.card_results)):
                 self.results['cards'].append(
                     {
+                        "entity": item[self.entity_indexer],
                         "link": self.card_results[i],
                         "buying_options": [],
                         "reviews": []
                     }
                 )
+                self.entity_indexer+=1
                 yield scrapy.Request(f'{self.card_results[i]}', callback=self.parse_descriptions)
         
 
@@ -345,7 +350,6 @@ class BlackwidowSpider(scrapy.Spider):
             #         query_item[field] = json.dumps(self.results[field])
             #     else:
             #         query_item[field] = self.results[field]
-            
 
             ### YIELDING IN JSON FILE
             for item in item_fields:
