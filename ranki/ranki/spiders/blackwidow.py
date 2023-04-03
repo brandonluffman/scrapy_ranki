@@ -308,6 +308,7 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         continue
 
+### This code should be inserted in place of Line 302
         # linkers = []
         # for td in tds:
         #     link = td.css('a').attrib['href']
