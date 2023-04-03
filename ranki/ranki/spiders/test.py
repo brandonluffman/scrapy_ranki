@@ -1,34 +1,35 @@
-# import scrapy
-# from newspaper import Article
-# from newspaper import Config
+import scrapy
+from tld import get_tld
+0
+class TestSpider(scrapy.Spider):
+    name = "test"
+    start_urls = ["https://www.google.com/shopping/product/1219922484318508456?biw=2160&bih=1053&output=search&q=apple+airpods+max&oq=apple+airpods+max&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgQIIxAnMgQIIxAnMgUIABCABDILCAAQgAQQsQMQgwEyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgARQAFgAYN0CaABwAHgAgAFDiAFDkgEBMZgBAMABAQ&sclient=products-cc&prds=eto:6274634352930567101_0,pid:12252833144158501899,rsk:PC_7069147378898153804&sa=X&ved=0ahUKEwjE0d2-iY7-AhVfEVkFHU3CDqsQ9pwGCCk"]
 
+    def parse(self, response):
+        tds = response.css('div.UAVKwf')
+        linkers = []
+        for td in tds:
+            link = td.css('a').attrib['href']
+            linkers.append(link[7:])
 
-# cats = ['Over Ear Headphones', 'Earbuds', 'Smartphones', 'Tablets', 'Routers', 'Cameras', 'TV', 'Laptop', 'Bluetooth Speakers', 'Smart Watches', 'Home Security System', 'Mens Jeans', 'Womens Leggings', 'Mens Cardigans', 'Bras', 'Womens Underwear', 'Mens Underwear', 'Mens Gym Shorts', 'Mens gym shirts', 'Womens socks', 'Womens Swimsuits', 'Mens Swimsuits', 'Womens Blouses', 'Womens Workout tops', 'Mens running shoes', 'womens running shoes', 'mens hiking boots', 'womens hiking boots', 'mens dress shoes', 'womens heels', 'mens sneakers', 'womens sneakers', 'mens golf shoes', 'womens golf shoes', 'mens boots', 'womens boots', 'mens flip flops', 'womens flip flops', 'womens platform shoes', 'Accessories', 'Womens Bags', 'Womens Purses', 'Mens belts', 'womens belts', 'womens eyeglasses', 'mens eyeglasses', 'Mens sunglasses', 'womens sunglasses', 'beanies', 'wallets', 'mens hats', 'womens hats', 'womens necklaces', 'mens chains', 'mens bracelets', 'womens bracelets', 'womens earrings', 'mens earrings', 'mens rings', 'womens rings', 'Air Fryer', 'Humidifier', 'Comforter', 'Blender', 'Toaster', 'Water Bottle', 'Crock Pot', 'Food Scale', 'Skillet', 'Grill', 'Smoker', 'Pellet Grills', 'Food Storage Containers', 'Beauty & Personal Care', 'Sunscreen', 'Body Lotion', 'Face Lotion', 'Deodorant', 'Perfume', 'Cologne', 'Mens Razors', 'Womens Razors', 'Makeup Remover', 'Mascara', 'Lipstick', 'Chapstick', 'Nail Polish', 'Blow Dryer', 'Mens Electric Razor', 'Exfoliator', "Men's Body Wash", "Women's Body Wash", 'Womens Shampoo', "Men's Shampoo", 'Womens Conditioner', 'Mens Conditioner']
-
-# for cat in cats:
-#     serps = response.css('div.v7W49e')
-#     serp_results = serps.css('div.yuRUbf')
-#     serp_link_list = []
-#     if serp_results:
-#         for serp_result in serp_results[:3]:
-#             serp_link = serp_result.css('a').attrib['href']
-#             serp_link_list.append(serp_link)
-#     urls = []
-
-# for url in urls:    
-#     r = requests.get(url, headers=headers)
-
-# soup = BeautifulSoup(r.text, 'lxml')
-# affiliate_content = []
-# for heading in soup.find_all(["h1", "h2","h3","h4","h5","h6","li" ,"p"]):
-#     # print(heading.name + ' ' + heading.text.strip())
-#     # print(f' -------- \n')
-#     if len(heading.text.strip()) > 20:
-#         affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
-#         # print(" ".join(heading.text.strip().replace('\n', '').split()))
-#     else:
-#         pass
+        # print(linkers)
  
-#     final_content = " ".join(affiliate_content)
-    
-# print(final_content)
+        resers = []
+        for url in linkers:
+            res = get_tld(url,as_object=True)
+            reser = res.fld
+            resers.append(reser)
+        print(resers)
+        i=0
+        newy = []
+        iland = []
+        for re in resers:
+            print(f'{re} i = {i}')
+            if re not in newy:
+                newy.append(re)
+                iland.append(linkers[i])
+            i +=1
+
+        print(iland)
+
+

@@ -308,6 +308,29 @@ class BlackwidowSpider(scrapy.Spider):
                     else:
                         continue
 
+        # linkers = []
+        # for td in tds:
+        #     link = td.css('a').attrib['href']
+        #     linkers.append(link[7:])
+ 
+        # resers = []
+        # for url in linkers:
+        #     res = get_tld(url,as_object=True)
+        #     reser = res.fld
+        #     resers.append(reser)
+        # print(resers)
+        # i=0
+        # newy = []
+        # iland = []
+        # for re in resers:
+        #     print(f'{re} i = {i}')
+        #     if re not in newy:
+        #         newy.append(re)
+        #         iland.append(linkers[i])
+        #     i +=1
+
+        # print(iland)
+
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
         card_link = response.meta['card_link']
@@ -316,7 +339,7 @@ class BlackwidowSpider(scrapy.Spider):
             title = review.css('.P3O8Ne::text').get()
             date = review.css('.ff3bE::text').get()
             rating = int(review.css('.UzThIf::attr(aria-label)').get()[0])
-            content = review.css('.g1lvWe div::text').get()
+            content = review.css('.g1lvWe div:nth-of-type(2)::text').get()
             source = review.css('.sPPcBf').xpath('normalize-space()').get()
             for i in range(len(self.results['cards'])):
                 if self.results['cards'][i]['link'] == card_link:
