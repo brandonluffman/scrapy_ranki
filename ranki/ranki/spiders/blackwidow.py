@@ -10,7 +10,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
-# from ranki.items import Product
+from ranki.items import Product
 from ranki.items import RankiQuery
 import json
 
@@ -354,20 +354,9 @@ class BlackwidowSpider(scrapy.Spider):
                     })
                 else:
                     continue
-            # self.results['cards'][card_link]['reviews'].append({
-            #     'review_link': response.url,
-            #     'title' : title,
-            #     'rating' : rating,
-            #     'date' : date,
-            #     'content' : content,
-            #     'source' : source,
-            # })
 
-        # if len(self.results[]['reviews']) == (len(self.review_links) * 10):
         if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
             query_item = RankiQuery()
-            
-            ##YIELDING IN MYSQL DB
 
             item_fields = list(self.results.keys())
             for field in item_fields:
@@ -377,36 +366,30 @@ class BlackwidowSpider(scrapy.Spider):
                     query_item[field] = self.results[field]
             card_items = []
 
-            # for i in range(len(self.results['cards'])):
-            #     temp_obj = {
-            #         'product_title': self.results['cards'][i]['description']['product_title'],
-            #         'product_description': self.results['cards'][i]['description']['product_description'],
-            #         'product_rating': self.results['cards'][i]['description']['product_rating'],
-            #         'product_image': self.results['cards'][i]['description']['product_img'],
-            #         'product_specs': json.dumps(self.results['cards'][i]['description']['product_specs']),
-            #         'link': self.results['cards'][i]['link'],
-            #         'all_reviews_link': self.results['cards'][i]['description']['all_reviews_link'],
-            #         'buying_options_link': self.results['cards'][i]['description']['product_buying_options_link'],
-            #         'entity': self.results['cards'][i]['entity'],
-            #         'buying_options': json.dumps(self.results['cards'][i]['buying_options']),
-            #         'reviews': json.dumps(self.results['cards'][i]['reviews']),
-            #         'review_count': self.results['cards'][i]['description']['review_count']
-            #     }
-            #     card_items.append(temp_obj)
-            # for item in card_items:
-            #     keys = item.keys()
-            #     print(keys)
-            #     product_item = Product()
-            #     for key in list(item.keys()):
-            #         product_item[key] = item[key]
-            #     yield product_item
+            for i in range(len(self.results['cards'])):
+                temp_obj = {
+                    'product_title': self.results['cards'][i]['description']['product_title'],
+                    'product_description': self.results['cards'][i]['description']['product_description'],
+                    'product_rating': self.results['cards'][i]['description']['product_rating'],
+                    'product_image': self.results['cards'][i]['description']['product_img'],
+                    'product_specs': json.dumps(self.results['cards'][i]['description']['product_specs']),
+                    'link': self.results['cards'][i]['link'],
+                    'all_reviews_link': self.results['cards'][i]['description']['all_reviews_link'],
+                    'buying_options_link': self.results['cards'][i]['description']['product_buying_options_link'],
+                    'entity': self.results['cards'][i]['entity'],
+                    'buying_options': json.dumps(self.results['cards'][i]['buying_options']),
+                    'reviews': json.dumps(self.results['cards'][i]['reviews']),
+                    'review_count': self.results['cards'][i]['description']['review_count']
+                }
+                card_items.append(temp_obj)
+            for item in card_items:
+                keys = item.keys()
+                print(keys)
+                product_item = Product()
+                for key in list(item.keys()):
+                    product_item[key] = item[key]
+                yield product_item
 
-
-                
-
-            ### YIELDING IN JSON FILE
-            # for item in item_fields:
-            #     query_item[item] = self.results[item]
             yield query_item
            
 
