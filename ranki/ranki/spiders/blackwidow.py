@@ -66,8 +66,6 @@ class BlackwidowSpider(scrapy.Spider):
         for i in range(len(card_urls)):
             yield scrapy.Request(url=card_urls[i],callback=self.parse_cards)
         
-
-
     def parse(self, response):
         # NER MODEL
         # def get_product_names(self,response,text):
