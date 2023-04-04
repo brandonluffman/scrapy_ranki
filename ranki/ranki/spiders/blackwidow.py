@@ -188,6 +188,23 @@ class BlackwidowSpider(scrapy.Spider):
                 final_content = " ".join(affiliate_content)
                 self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
 
+### Model for Getting Entities in a List
+# import spacy
+# from spacy import displacy
+# from collections import Counter
+# import en_core_web_sm
+# from hello import hello
+# # nlp = en_core_web_sm.load()
+# nlp = spacy.load('./output/model-last')
+                # doc = nlp(hello)
+                # items = [x.text for x in doc.ents]
+                # all_items = Counter(items).most_common(3)
+                # entities = []
+                # for all_item in all_items:
+                #     entities.append(all_item[0])
+                # print(entities)
+
+
     def parse_cards(self, response):
         item = list(response.meta.get('item').values())
         domain = 'https://www.google.com/'
