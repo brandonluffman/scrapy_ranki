@@ -1,9 +1,46 @@
-# import scrapy
+import scrapy
 # from tld import get_tld
-# 0
-# class TestSpider(scrapy.Spider):
-#     name = "test"
-#     start_urls = ["https://www.google.com/shopping/product/1219922484318508456?biw=2160&bih=1053&output=search&q=apple+airpods+max&oq=apple+airpods+max&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgQIIxAnMgQIIxAnMgUIABCABDILCAAQgAQQsQMQgwEyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgARQAFgAYN0CaABwAHgAgAFDiAFDkgEBMZgBAMABAQ&sclient=products-cc&prds=eto:6274634352930567101_0,pid:12252833144158501899,rsk:PC_7069147378898153804&sa=X&ved=0ahUKEwjE0d2-iY7-AhVfEVkFHU3CDqsQ9pwGCCk"]
+
+class TestSpider(scrapy.Spider):
+    name = "test"
+    start_urls = ["https://www.google.com/shopping/product/17653315832884157286/offers?q=sony+wh1000xm5&prds=eto:8676632268192045111_0;4695355544304054685_0;3696208797495415788_0,pid:18209137397974619706,rsk:PC_11648784580466805463&sa=X&ved=0ahUKEwj4kYCVtJD-AhXQF1kFHUpoBGUQoLAGCNYB"]
+
+    
+    def parse(self, response):
+        test = []
+        tds = response.css('td.SH30Lb')
+        for td in tds:
+            Link = td.css('div.UAVKwf a::attr(href)').extract()
+            test.append(Link)
+
+        spans = response.css('td.SH30Lb')
+        for td in spans:
+            if td.css('span.fObmGc::text').extract() is not None:
+                link = td.css('span.fObmGc::text')
+                if link is not None:
+                # test.append(t.extract())
+                    test.append(link.extract())
+                else:
+                    continue
+            else:
+                continue
+
+        list2 = [x for x in test if x]
+ 
+
+        print(list2)
+
+
+
+
+
+
+
+
+
+
+
+
 
 #     def parse(self, response):
 #         tds = response.css('div.UAVKwf')

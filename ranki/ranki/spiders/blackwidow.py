@@ -89,7 +89,7 @@ class BlackwidowSpider(scrapy.Spider):
         serp_results = serps.css('div.yuRUbf')
         serp_link_list = []
         if serp_results:
-            for serp_result in serp_results[:3]:
+            for serp_result in serp_results[:5]:
                 serp_link = serp_result.css('a').attrib['href']
                 serp_title = serp_result.css('h3::text').getall()
                 serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
@@ -100,7 +100,7 @@ class BlackwidowSpider(scrapy.Spider):
                 })
         else:
             serp_results = serps.css('div.DhN8Cf')
-            for serp_result in serp_results[:3]:
+            for serp_result in serp_results[:5]:
                 serp_link = serp_result.css('a').attrib['href']
                 serp_title = serp_result.css('h3::text').getall()
                 serp_favicon = serp_result.css('div.eqA2re img').attrib['src']
@@ -187,6 +187,48 @@ class BlackwidowSpider(scrapy.Spider):
                         pass
                 final_content = " ".join(affiliate_content)
                 self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
+
+
+                ###  Updated Code to Extract Text
+
+                # if (len(self.urls)/1) == len(cats):
+                #     print(self.urls) 
+                #     for url in self.urls:   
+                #         headers = {
+                #             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                #             "Accept-Language": "en",
+                #             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                #         } 
+                #         r = requests.get(url, headers=headers)
+
+                #         soup = BeautifulSoup(r.text, 'lxml')
+                #         affiliate_content = []
+                #         for heading in soup.find_all(["p"]):
+                #             # print(heading.name + ' ' + heading.text.strip())
+                #             # print(f' -------- \n')
+                #             if len(heading.text.strip()) > 20:
+                #                 # print(heading.text.strip())
+                #                 affiliate_content.append(heading.text.strip())
+                #                 # affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
+                #             # print(" ".join(heading.text.strip().replace('\n', '').split()))
+                #             else:
+                #                 pass
+
+                #         lister = []
+
+                #         for sentence in affiliate_content:
+                #             if sentence[-1] != '.' and sentence[-1] != '!' and sentence[-1] != '?':
+                #                 new_sentence = sentence + '.'
+                #                 lister.append(new_sentence)
+                #             else:
+                #                 new_sentence = sentence
+                #                 lister.append(new_sentence)
+                                    
+
+                #         final_content = " ".join(lister)
+                #         with open('file.txt', 'a') as f:
+                #             f.write(f'{final_content}\n\n')
+
 
 ### Model for Getting Entities in a List
 # import spacy
@@ -348,6 +390,33 @@ class BlackwidowSpider(scrapy.Spider):
         #     i +=1
 
         # print(iland)
+
+
+    ### This code will be used to grab buying links will their respective price --- Should be implemented in connjunction with the code above ^^^^ 
+
+        # def parse(self, response):
+        # test = []
+        # tds = response.css('td.SH30Lb')
+        # for td in tds:
+        #     Link = td.css('div.UAVKwf a::attr(href)').extract()
+        #     test.append(Link)
+
+        # spans = response.css('td.SH30Lb')
+        # for td in spans:
+        #     if td.css('span.fObmGc::text').extract() is not None:
+        #         link = td.css('span.fObmGc::text')
+        #         if link is not None:
+        #         # test.append(t.extract())
+        #             test.append(link.extract())
+        #         else:
+        #             continue
+        #     else:
+        #         continue
+
+        # list2 = [x for x in test if x]
+ 
+
+        # print(list2)
 
     def parse_reviews(self, response):
         self.parse_review_run_count += 1
