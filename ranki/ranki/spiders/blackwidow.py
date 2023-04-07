@@ -167,7 +167,7 @@ class BlackwidowSpider(scrapy.Spider):
                 self.results['reddit'].append({"title":title, "link": link, "comments": post_comments})
 
         else:
-            for serp_obj in serp_link_list:
+            for serp_obj in serp_link_list: 
                 link = serp_obj['link']
                 favicon = serp_obj['favicon']
                 title = serp_obj['title'][0]
@@ -175,18 +175,56 @@ class BlackwidowSpider(scrapy.Spider):
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "en",
                     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-                }
+                } 
                 r = requests.get(link, headers=headers)
 
                 soup = BeautifulSoup(r.text, 'lxml')
                 affiliate_content = []
-                for heading in soup.find_all(["h1", "h2","h3","h4","h5","h6","li" ,"p"]):
+                for heading in soup.find_all(["p"]):
+                    # print(heading.name + ' ' + heading.text.strip())
+                    # print(f' -------- \n')
                     if len(heading.text.strip()) > 20:
-                        affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
+                        # print(heading.text.strip())
+                        affiliate_content.append(heading.text.strip())
+                        # affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
+                    # print(" ".join(heading.text.strip().replace('\n', '').split()))
                     else:
                         pass
-                final_content = " ".join(affiliate_content)
+
+                lister = []
+
+                for sentence in affiliate_content:
+                    if sentence[-1] != '.' and sentence[-1] != '!' and sentence[-1] != '?':
+                        new_sentence = sentence + '.'
+                        lister.append(new_sentence)
+                    else:
+                        new_sentence = sentence
+                        lister.append(new_sentence)
+                            
+
+                final_content = " ".join(lister)
                 self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
+
+                # link = serp_obj['link']
+                # favicon = serp_obj['favicon']
+                # title = serp_obj['title'][0]
+                # headers = {
+                #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                #     "Accept-Language": "en",
+                #     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                # }
+                # r = requests.get(link, headers=headers)
+
+                # soup = BeautifulSoup(r.text, 'lxml')
+                # affiliate_content = []
+                # for heading in soup.find_all(["h1", "h2","h3","h4","h5","h6","li" ,"p"]):
+                #     if len(heading.text.strip()) > 20:
+                #         affiliate_content.append(" ".join(heading.text.strip().replace('\n', '').split()))
+                #     else:
+                #         pass
+                # final_content = " ".join(affiliate_content)
+
+                # self.results['google'].append({"link": link, "favicon": favicon,"title": title, "text": final_content,})
 
 
                 ###  Updated Code to Extract Text
