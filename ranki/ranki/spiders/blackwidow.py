@@ -10,18 +10,17 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import requests
 from bs4 import BeautifulSoup
-from ranki.items import Product
-from ranki.items import RankiQuery
+# from ranki.items import Product
+# from ranki.items import RankiQuery
 import json
-
 
 
 class BlackwidowSpider(scrapy.Spider):
     name = "blackwidow"
     
 
-    def __init__(self, name=None, **kwargs):
-        super(BlackwidowSpider,self).__init__(name, **kwargs) 
+    def __init__(self, **kwargs):
+        super(BlackwidowSpider,self).__init__(**kwargs) 
         self.entities = ['apple airpods max','sony wh-1000xm5','bose quietcomfort']
         self.results = {
             'query_name': '',
@@ -30,6 +29,7 @@ class BlackwidowSpider(scrapy.Spider):
             'youtube': [],
             'google': []
         }
+        self.query = kwargs.get('query')
         self.card_results = []
         self.review_links = []
         self.buying_option_links = []
@@ -38,7 +38,7 @@ class BlackwidowSpider(scrapy.Spider):
         self.entity_indexer = 0
 
     def start_requests(self):
-        query = input("What would you like to get the links for? \n")
+        query = 'headphones'
         today = datetime.date.today()
         year = today.year
 
@@ -480,14 +480,14 @@ class BlackwidowSpider(scrapy.Spider):
                     continue
 
         if (self.parse_buying_options_run_count == len(self.review_links)) and (self.parse_review_run_count == len(self.buying_option_links)):
-            query_item = RankiQuery()
+            # query_item = RankiQuery()
 
-            item_fields = list(self.results.keys())
-            for field in item_fields:
-                if type(self.results[field] == list):
-                    query_item[field] = json.dumps(self.results[field])
-                else:
-                    query_item[field] = self.results[field]
+            # item_fields = list(self.results.keys())
+            # for field in item_fields:
+            #     if type(self.results[field] == list):
+            #         query_item[field] = json.dumps(self.results[field])
+            #     else:
+            #         query_item[field] = self.results[field]
             card_items = []
 
             for i in range(len(self.results['cards'])):
@@ -507,14 +507,15 @@ class BlackwidowSpider(scrapy.Spider):
                 }
                 card_items.append(temp_obj)
             for item in card_items:
-                keys = item.keys()
-                print(keys)
-                product_item = Product()
-                for key in list(item.keys()):
-                    product_item[key] = item[key]
-                yield product_item
+                yield item
+            #     keys = item.keys()
+            #     print(keys)
+            #     product_item = Product()
+            #     for key in list(item.keys()):
+            #         product_item[key] = item[key]
+            #     yield product_item
 
-            yield query_item
+            yield self.results
            
 
 
@@ -527,3 +528,29 @@ class BlackwidowSpider(scrapy.Spider):
             #     next_page_url = 'https://www.google.com' + next_page
             #     yield response.follow(next_page_url, callback=self.parse_reviews)
 
+from fastapi import FastAPI
+from scrapy.crawler import CrawlerProcess,CrawlerRunner
+from scrapy.utils.project import get_project_settings
+from twisted.internet import reactor,defer
+from scrapy.utils.log import configure_logging
+# from twisted.internet import 
+app = FastAPI()
+
+@app.get("/crawl/")
+async def crawl():
+    def handle_output(output):
+        items.extend(output.get("items",[]))
+    configure_logging()
+    runner = CrawlerRunner(get_project_settings())
+
+    @defer.inlineCallbacks
+    def crawl():
+        yield runner.crawl(BlackwidowSpider)
+        items = runner.crawlers
+        defer.returnValue(items)
+        # items.append(BlackwidowSpider.parse_reviews())
+        # reactor.stop()
+    items = crawl()
+    reactor.run()
+
+    return {"data":items}
